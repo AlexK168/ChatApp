@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/ConsoleChat.dir/main.cpp.o CMakeFiles/ConsoleChat.dir/User.cpp.o  -o ConsoleChat 
