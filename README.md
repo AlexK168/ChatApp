@@ -1,1 +1,1 @@
-Chat app on sockets
+ChatApp on sockets
