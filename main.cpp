@@ -9,25 +9,31 @@
 #define SERVER_PORT 12345
 #define BUF_SIZE 1024
 
+void fatal(char *msg) {
+    printf("%s\n", msg);
+    exit(1);
+}
+
 void connect(char * userName) {
     int s ,c;
-    char buffer[1024] = {};
     char ip[15] = {};
     struct hostent *h;
     struct sockaddr_in channel;
     std::cout << "Enter IP address to connect to" << std::endl;
     scanf("%s", ip);
     h = gethostbyname(ip);
-    if (!h) return;
+    if (!h) fatal("Invalid ip address");
     s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (s < 0) return;
+    if (s < 0) fatal("Can't create a socket");
+    printf("%s\n", "Socket is created");
     memset(&channel, 0, sizeof(channel));
     channel.sin_family=AF_INET;
     memcpy(&channel.sin_addr.s_addr, h->h_addr_list, h->h_length);
     channel.sin_port = htons(SERVER_PORT);
 
     c = connect(s, (struct  sockaddr *) &channel, sizeof(channel));
-    if(c < 0) return;
+    if(c < 0) fatal("Can't connect");
+    printf("%s\n", "Connected, writing message");
     write(s, userName, strlen(userName) + 1);
 }
 
@@ -44,46 +50,52 @@ void createConnection() {
 
     // step 1 - create socket
     int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // AF_INET - address format, SOCK_STREAM - reliable byte stream, IPPROTO_TCP - TCP protocol
-    if (s < 0) return;
+    if (s < 0) fatal("Can't create a socket");
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &on, sizeof(on));
+    printf("%s\n", "Socket is created");
 
     // step 2 - bind to address
     int b = bind(s, (struct sockaddr *) &channel, sizeof(channel));
-    if (b < 0) return;
+    if (b < 0) fatal("Binding failed");
+    printf("%s\n", "Bound to address");
 
     // step 3 - listen to connections
     int l = listen(s, 10);
-    if (l < 0) return;
+    if (l < 0) fatal("listen() has failed");
+    printf("%s\n", "Listening to connections");
 
     // step 4 - block thread and wait for connection
-    int sa = accept(s, 0, 0);
-    if (sa < 0) return;
+    while(1) {
+        printf("%s\n", "About to accept...");
+        int sa = accept(s, 0, 0);
+        if (sa < 0) fatal("Can't accept");
 
-    read(sa, buffer, BUF_SIZE);
-    for (const auto c : buffer)
-        std::cout << c;
-    std::cout << std::endl;
+        read(sa, buffer, BUF_SIZE);
+        for (const auto c : buffer)
+            std::cout << c;
+        std::cout << std::endl;
+        close(sa);
+    }
+
 }
 
 int main() {
     printf("Enter your nickname(that's what other user will see):\n");
     char name[30]{};
     scanf("%s", name);
-    // User u(name);
-    // std::cout << "Welcome, " << u << "!" << std::endl;
-    std::cout << "Press \n1 - to create connection\n2 - to connect to existing one\n3 - to quit" << std::endl;
+    printf("Press \n1 - to create connection\n2 - to connect to existing one\n3 - to quit\n");
     int option;
     bool flag = true;
     while (flag) {
-        std::cin >> option;
+        scanf("%d", &option);
         switch (option) {
             case 1:
-                std::cout << "Creating connection...";
+                std::cout << "Creating connection:\n";
                 createConnection();
                 flag = false;
                 break;
             case 2:
-                std::cout << "Connecting...";
+                std::cout << "Connecting...\n";
                 connect(name);
                 flag = false;
                 break;
