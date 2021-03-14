@@ -9,6 +9,7 @@
 #define SERVER_PORT 12345
 #define BUF_SIZE 1024
 
+
 void fatal(char *msg) {
     printf("%s\n", msg);
     exit(1);
@@ -23,24 +24,25 @@ void connect(char * userName) {
     scanf("%s", ip);
     h = gethostbyname(ip);
     if (!h) fatal("Invalid ip address");
+
     s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s < 0) fatal("Can't create a socket");
     printf("%s\n", "Socket is created");
     memset(&channel, 0, sizeof(channel));
-    channel.sin_family=AF_INET;
-    memcpy(&channel.sin_addr.s_addr, h->h_addr_list, h->h_length);
+    bcopy(h->h_addr, &channel.sin_addr, h->h_length);
+    channel.sin_family = AF_INET;
     channel.sin_port = htons(SERVER_PORT);
 
     c = connect(s, (struct  sockaddr *) &channel, sizeof(channel));
     if(c < 0) fatal("Can't connect");
-    printf("%s\n", "Connected, writing message");
+    printf("%s\n", "Connected, writing message:");
     write(s, userName, strlen(userName) + 1);
 }
 
 void createConnection() {
     int on = 1;
     struct sockaddr_in channel;
-    char buffer[1024] = {};
+    char buffer[1024];
 
     // initialization of socket address
     memset(&channel, 0, sizeof(channel));
@@ -51,7 +53,7 @@ void createConnection() {
     // step 1 - create socket
     int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // AF_INET - address format, SOCK_STREAM - reliable byte stream, IPPROTO_TCP - TCP protocol
     if (s < 0) fatal("Can't create a socket");
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &on, sizeof(on));
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, (char *) &on, sizeof(on));
     printf("%s\n", "Socket is created");
 
     // step 2 - bind to address
@@ -65,18 +67,17 @@ void createConnection() {
     printf("%s\n", "Listening to connections");
 
     // step 4 - block thread and wait for connection
-    while(1) {
-        printf("%s\n", "About to accept...");
-        int sa = accept(s, 0, 0);
-        if (sa < 0) fatal("Can't accept");
+    printf("%s\n", "About to accept...");
+    int sa = accept(s, nullptr, nullptr);
+    if (sa < 0) fatal("Can't accept");
 
-        read(sa, buffer, BUF_SIZE);
-        for (const auto c : buffer)
-            std::cout << c;
-        std::cout << std::endl;
-        close(sa);
+    read(sa, buffer, BUF_SIZE);
+    for (const auto c : buffer) {
+        printf("%c", c);
+        if (c == '\0')
+            break;
     }
-
+    close(sa);
 }
 
 int main() {
