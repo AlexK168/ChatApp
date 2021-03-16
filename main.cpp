@@ -5,7 +5,6 @@
 #include <cstring>
 #include <netdb.h>
 #include <mutex>
-#include <thread>
 #include "Session.h"
 
 #define SERVER_PORT 12345
@@ -46,17 +45,12 @@ void connect(char * userName, sockaddr_in &channel, sockaddr_in &opponentAddr, i
     bcopy(h->h_addr, &channel.sin_addr, h->h_length);
     channel.sin_family = AF_INET;
     channel.sin_port = htons(SERVER_PORT);
-
     memcpy(&opponentAddr, &channel, sizeof(channel));
-
     c = connect(s, (struct  sockaddr *) &channel, sizeof(channel));
     if(c < 0) fatal("Can't connect");
+
     printf("%s\n", "Connected");
-
-    // send client name
     write(s, userName, strlen(userName) + 1);
-
-    // read server's name
     read(s, opponentName, BUF_SIZE);
     close(s);
 
@@ -65,40 +59,28 @@ void connect(char * userName, sockaddr_in &channel, sockaddr_in &opponentAddr, i
 
 void createConnection(char * userName, sockaddr_in &channel, sockaddr_in &opponentAddr, int &socketUDP, char *opponentName) {
     int on = 1;
-
-    // initialization of socket address
     memset(&channel, 0, sizeof(channel));
     channel.sin_family = AF_INET; // it's always AF_INET
     channel.sin_addr.s_addr = htonl(INADDR_ANY); // set IP address. htonl is used to eliminate big/little-endian issues
     channel.sin_port = htons(SERVER_PORT); // set port to SERVER_PORT - 12345
 
-    // step 1 - create socket
     int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // AF_INET - address format, SOCK_STREAM - reliable byte stream, IPPROTO_TCP - TCP protocol
     if (s < 0) fatal("Can't create a socket");
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, (char *) &on, sizeof(on));
 
-    // step 2 - bind to address
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, (char *) &on, sizeof(on));
     int b = bind(s, (struct sockaddr *) &channel, sizeof(channel));
     if (b < 0) fatal("Binding failed");
 
-    // step 3 - listen to connections
     int l = listen(s, 5);
     if (l < 0) fatal("listen() has failed");
 
-    // step 4 - block thread and wait for connection
     int c = sizeof(struct sockaddr_in);
     int sa = accept(s, (struct sockaddr *) &opponentAddr, (socklen_t*)&c);
     printf("%s\n", "Connected");
-
     opponentAddr.sin_port = htons(CLIENT_PORT);
     if (sa < 0) fatal("Can't accept");
-
-    // read client's name
     read(sa, opponentName, BUF_SIZE);
-
-    // send server's name
     write(sa, userName, strlen(userName) + 1);
-
     close(sa);
 
     setUpUDP(socketUDP, SERVER_PORT);

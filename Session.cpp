@@ -1,6 +1,7 @@
 #include "Session.h"
 
 Session::Session(int socket, std::string myName, std::string opponentsName, sockaddr_in &opponentAddr, int bufferSize) {
+    counter = 0;
     this->socket = socket;
     myNickname = std::move(myName);
     opponentsNickname = std::move(opponentsName);
@@ -12,23 +13,36 @@ Session::Session(int socket, std::string myName, std::string opponentsName, sock
 void Session::send() {
     for (;;) {
         size_t bufsize = BUF_SIZE;
-        char buffer[bufsize];
-        char *b = buffer;
+        char buffer[bufsize + sizeof(int)];
+        char *b = buffer + sizeof(int);
         getline(&b, &bufsize, stdin);
-        if (buffer[0] == '\n') {
+        if (*b == '\n') {
             continue;
         }
-        sendto(socket, buffer, sizeof(buffer), 0,
+        int c;
+        mtx.lock();
+        counter++;
+        c = counter;
+        mtx.unlock();
+        memcpy(buffer, &c, sizeof(int));
+        sendto(socket, buffer, BUF_SIZE, 0,
                (struct sockaddr*)&opponentAddr, sizeof(opponentAddr));
-        queue->push(1, std::string(buffer), myNickname);
+        queue->push(c, std::string(b), myNickname);
     }
 }
 
 void Session::receive() {
     for (;;) {
         char buffer[BUF_SIZE];
-        recvfrom(socket, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL);
-        queue->push(1, std::string(buffer), opponentsNickname);
+        recvfrom(socket, buffer, BUF_SIZE, 0, (struct sockaddr*)NULL, NULL);
+        int c;
+        memcpy(&c, buffer, sizeof(int));
+        char * b = buffer;
+        b += sizeof(int);
+        queue->push(c, std::string(b), opponentsNickname);
+        mtx.lock();
+        counter = c + 1;
+        mtx.unlock();
     }
 }
 

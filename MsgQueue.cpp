@@ -14,7 +14,7 @@ void MsgQueue::output() {
 void MsgQueue::push(int id, std::string msg, std::string holder) {
     const std::lock_guard<std::mutex> lock(mtx);
     if(queue.size() >= size)
-        queue.pop_back();
+        queue.pop_front();
     MsgQueue::Item newItem {id, std::move(msg), std::move(holder)};
     queue.push_back(newItem);
     sort(queue.begin(), queue.end());

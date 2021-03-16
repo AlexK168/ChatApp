@@ -22,7 +22,7 @@ private:
     };
     std::mutex mtx;
     int size;
-    std::vector<Item> queue;
+    std::deque<Item> queue;
     void output();
     void clearScreen();
 };
