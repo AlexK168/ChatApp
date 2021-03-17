@@ -24,7 +24,7 @@ private:
     int size;
     std::deque<Item> queue;
     void output();
-    void clearScreen();
+    static void clearScreen();
 };
 
 #endif //CONSOLECHAT_MSGQUEUE_H
