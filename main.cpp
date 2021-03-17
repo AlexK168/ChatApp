@@ -60,11 +60,11 @@ void connect(char * userName, sockaddr_in &channel, sockaddr_in &opponentAddr, i
 void createConnection(char * userName, sockaddr_in &channel, sockaddr_in &opponentAddr, int &socketUDP, char *opponentName) {
     int on = 1;
     memset(&channel, 0, sizeof(channel));
-    channel.sin_family = AF_INET; // it's always AF_INET
-    channel.sin_addr.s_addr = htonl(INADDR_ANY); // set IP address. htonl is used to eliminate big/little-endian issues
-    channel.sin_port = htons(SERVER_PORT); // set port to SERVER_PORT - 12345
+    channel.sin_family = AF_INET;
+    channel.sin_addr.s_addr = htonl(INADDR_ANY);
+    channel.sin_port = htons(SERVER_PORT);
 
-    int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // AF_INET - address format, SOCK_STREAM - reliable byte stream, IPPROTO_TCP - TCP protocol
+    int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s < 0) fatal("Can't create a socket");
 
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, (char *) &on, sizeof(on));
@@ -109,7 +109,6 @@ int main() {
                 break;
             case 3:
                 exit(1);
-                break;
             default:
                 std::cout << "Enter valid option!" << std::endl;
         }
